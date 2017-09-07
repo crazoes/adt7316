@@ -239,6 +239,7 @@ static int init_cc_resources(struct platform_device *plat_dev)
 	/* First CC registers space */
 	req_mem_cc_regs = platform_get_resource(plat_dev, IORESOURCE_MEM, 0);
 	/* Map registers space */
+<<<<<<< 573ecde5598f24544790c209b4608f4de06c3a31
 	new_drvdata->cc_base = devm_ioremap_resource(dev, req_mem_cc_regs);
 	if (IS_ERR(new_drvdata->cc_base)) {
 		dev_err(dev, "Failed to ioremap registers");
@@ -250,6 +251,21 @@ static int init_cc_resources(struct platform_device *plat_dev)
 	dev_dbg(dev, "CC registers mapped from %pa to 0x%p\n",
 		&req_mem_cc_regs->start, new_drvdata->cc_base);
 
+=======
+	new_drvdata->cc_base = devm_ioremap_resource(&plat_dev->dev,
+						     req_mem_cc_regs);
+	if (IS_ERR(new_drvdata->cc_base)) {
+		rc = PTR_ERR(new_drvdata->cc_base);
+		goto init_cc_res_err;
+	}
+	SSI_LOG_DEBUG("Got MEM resource (%s): start=%pad end=%pad\n",
+		      req_mem_cc_regs->name,
+		      req_mem_cc_regs->start,
+		      req_mem_cc_regs->end);
+	SSI_LOG_DEBUG("CC registers mapped from %pa to 0x%p\n",
+		      &req_mem_cc_regs->start, new_drvdata->cc_base);
+	cc_base = new_drvdata->cc_base;
+>>>>>>> staging: ccree: Convert to devm_ioremap_resource for map, unmap
 	/* Then IRQ */
 	new_drvdata->irq = platform_get_irq(plat_dev, 0);
 	if (new_drvdata->irq < 0) {
@@ -414,6 +430,7 @@ post_sysfs_err:
 #ifdef ENABLE_CC_SYSFS
 	ssi_sysfs_fini();
 #endif
+<<<<<<< 573ecde5598f24544790c209b4608f4de06c3a31
 <<<<<<< 32fe5453d4464dc2a997e90e91266ea2769f6c28
 post_regs_err:
 	fini_cc_regs(new_drvdata);
@@ -431,6 +448,11 @@ post_clk_err:
 			release_mem_region(new_drvdata->res_mem->start,
 					   resource_size(new_drvdata->res_mem));
 			new_drvdata->res_mem = NULL;
+=======
+		if (irq_registered) {
+			free_irq(new_drvdata->res_irq->start, new_drvdata);
+			new_drvdata->res_irq = NULL;
+>>>>>>> staging: ccree: Convert to devm_ioremap_resource for map, unmap
 		}
 		dev_set_drvdata(&plat_dev->dev, NULL);
 	}
@@ -467,14 +489,6 @@ static void cleanup_cc_resources(struct platform_device *plat_dev)
 =======
 	free_irq(drvdata->res_irq->start, drvdata);
 	drvdata->res_irq = NULL;
-
-	if (drvdata->cc_base) {
-		iounmap(drvdata->cc_base);
-		release_mem_region(drvdata->res_mem->start,
-				   resource_size(drvdata->res_mem));
-		drvdata->cc_base = NULL;
-		drvdata->res_mem = NULL;
-	}
 	dev_set_drvdata(&plat_dev->dev, NULL);
 >>>>>>> staging: ccree: Replace kzalloc with devm_kzalloc
 }

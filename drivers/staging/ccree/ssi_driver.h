@@ -121,6 +121,10 @@ struct ssi_crypto_req {
  * @fw_ver:	SeP loaded firmware version
  */
 struct ssi_drvdata {
+<<<<<<< 573ecde5598f24544790c209b4608f4de06c3a31
+=======
+	struct resource *res_irq;
+>>>>>>> staging: ccree: Convert to devm_ioremap_resource for map, unmap
 	void __iomem *cc_base;
 	int irq;
 	u32 irq_mask;
