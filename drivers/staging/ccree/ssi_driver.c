@@ -203,6 +203,11 @@ int init_cc_regs(struct ssi_drvdata *drvdata, bool is_probe)
 static int init_cc_resources(struct platform_device *plat_dev)
 {
 	struct resource *req_mem_cc_regs = NULL;
+<<<<<<< 32fe5453d4464dc2a997e90e91266ea2769f6c28
+=======
+	void __iomem *cc_base = NULL;
+	bool irq_registered = false;
+>>>>>>> staging: ccree: Replace kzalloc with devm_kzalloc
 	struct ssi_drvdata *new_drvdata;
 	struct device *dev = &plat_dev->dev;
 	struct device_node *np = dev->of_node;
@@ -210,12 +215,22 @@ static int init_cc_resources(struct platform_device *plat_dev)
 	dma_addr_t dma_mask;
 	int rc = 0;
 
+<<<<<<< 32fe5453d4464dc2a997e90e91266ea2769f6c28
 	new_drvdata = devm_kzalloc(dev, sizeof(*new_drvdata), GFP_KERNEL);
 	if (!new_drvdata)
 		return -ENOMEM;
 
 	platform_set_drvdata(plat_dev, new_drvdata);
 	new_drvdata->plat_dev = plat_dev;
+=======
+	new_drvdata = devm_kzalloc(&plat_dev->dev, sizeof(*new_drvdata),
+				   GFP_KERNEL);
+	if (!new_drvdata) {
+		SSI_LOG_ERR("Failed to allocate drvdata");
+		rc = -ENOMEM;
+		goto init_cc_res_err;
+	}
+>>>>>>> staging: ccree: Replace kzalloc with devm_kzalloc
 
 	new_drvdata->clk = of_clk_get(np, 0);
 	new_drvdata->coherent = of_dma_is_coherent(np);
@@ -399,10 +414,27 @@ post_sysfs_err:
 #ifdef ENABLE_CC_SYSFS
 	ssi_sysfs_fini();
 #endif
+<<<<<<< 32fe5453d4464dc2a997e90e91266ea2769f6c28
 post_regs_err:
 	fini_cc_regs(new_drvdata);
 post_clk_err:
 	cc_clk_off(new_drvdata);
+=======
+
+		if (req_mem_cc_regs) {
+			if (irq_registered) {
+				free_irq(new_drvdata->res_irq->start, new_drvdata);
+				new_drvdata->res_irq = NULL;
+				iounmap(cc_base);
+				new_drvdata->cc_base = NULL;
+			}
+			release_mem_region(new_drvdata->res_mem->start,
+					   resource_size(new_drvdata->res_mem));
+			new_drvdata->res_mem = NULL;
+		}
+		dev_set_drvdata(&plat_dev->dev, NULL);
+	}
+>>>>>>> staging: ccree: Replace kzalloc with devm_kzalloc
 	return rc;
 }
 
@@ -431,6 +463,20 @@ static void cleanup_cc_resources(struct platform_device *plat_dev)
 #endif
 	fini_cc_regs(drvdata);
 	cc_clk_off(drvdata);
+<<<<<<< 32fe5453d4464dc2a997e90e91266ea2769f6c28
+=======
+	free_irq(drvdata->res_irq->start, drvdata);
+	drvdata->res_irq = NULL;
+
+	if (drvdata->cc_base) {
+		iounmap(drvdata->cc_base);
+		release_mem_region(drvdata->res_mem->start,
+				   resource_size(drvdata->res_mem));
+		drvdata->cc_base = NULL;
+		drvdata->res_mem = NULL;
+	}
+	dev_set_drvdata(&plat_dev->dev, NULL);
+>>>>>>> staging: ccree: Replace kzalloc with devm_kzalloc
 }
 
 int cc_clk_on(struct ssi_drvdata *drvdata)
