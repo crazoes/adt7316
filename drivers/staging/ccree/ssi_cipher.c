@@ -711,8 +711,16 @@ static int ssi_blkcipher_complete(struct device *dev,
 	int completion_error = 0;
 	struct ablkcipher_request *req = (struct ablkcipher_request *)areq;
 
+<<<<<<< f3145c023966af8e207b6b3cdb6187c35e7f9e95
 	cc_unmap_blkcipher_request(dev, req_ctx, ivsize, src, dst);
 	kfree(req_ctx->iv);
+=======
+	ssi_buffer_mgr_unmap_blkcipher_request(dev, req_ctx, ivsize, src, dst);
+
+	/*Decrease the inflight counter*/
+	if (ctx_p->flow_mode == BYPASS && ctx_p->drvdata->inflight_counter > 0)
+		ctx_p->drvdata->inflight_counter--;
+>>>>>>> Staging: ccree: Remove unused variable.
 
 	if (areq) {
 		/*
