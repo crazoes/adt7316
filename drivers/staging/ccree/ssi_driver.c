@@ -231,9 +231,14 @@ static int init_cc_resources(struct platform_device *plat_dev)
 	if (!new_drvdata) {
 		SSI_LOG_ERR("Failed to allocate drvdata");
 		rc = -ENOMEM;
-		goto init_cc_res_err;
+		goto post_drvdata_err;
 	}
+<<<<<<< 8ce0e11cee844aec84164edad95a33f1b6dd131f
 >>>>>>> staging: ccree: Replace kzalloc with devm_kzalloc
+=======
+	dev_set_drvdata(&plat_dev->dev, new_drvdata);
+	new_drvdata->plat_dev = plat_dev;
+>>>>>>> staging: ccree: simplify resource release on error
 
 	new_drvdata->clk = of_clk_get(np, 0);
 	new_drvdata->coherent = of_dma_is_coherent(np);
@@ -258,17 +263,24 @@ static int init_cc_resources(struct platform_device *plat_dev)
 	new_drvdata->cc_base = devm_ioremap_resource(&plat_dev->dev,
 						     req_mem_cc_regs);
 	if (IS_ERR(new_drvdata->cc_base)) {
+		SSI_LOG_ERR("Failed to ioremap registers");
 		rc = PTR_ERR(new_drvdata->cc_base);
-		goto init_cc_res_err;
+		goto post_drvdata_err;
 	}
+
 	SSI_LOG_DEBUG("Got MEM resource (%s): start=%pad end=%pad\n",
 		      req_mem_cc_regs->name,
 		      req_mem_cc_regs->start,
 		      req_mem_cc_regs->end);
 	SSI_LOG_DEBUG("CC registers mapped from %pa to 0x%p\n",
 		      &req_mem_cc_regs->start, new_drvdata->cc_base);
+
 	cc_base = new_drvdata->cc_base;
+<<<<<<< 8ce0e11cee844aec84164edad95a33f1b6dd131f
 >>>>>>> staging: ccree: Convert to devm_ioremap_resource for map, unmap
+=======
+
+>>>>>>> staging: ccree: simplify resource release on error
 	/* Then IRQ */
 	new_drvdata->irq = platform_get_irq(plat_dev, 0);
 	if (new_drvdata->irq < 0) {
@@ -286,13 +298,15 @@ static int init_cc_resources(struct platform_device *plat_dev)
 =======
 		SSI_LOG_ERR("Failed getting IRQ resource\n");
 		rc = new_drvdata->irq;
-		goto init_cc_res_err;
+		goto post_drvdata_err;
 	}
+
 	rc = devm_request_irq(&plat_dev->dev, new_drvdata->irq, cc_isr,
 			      IRQF_SHARED, "arm_cc7x", new_drvdata);
 	if (rc) {
 		SSI_LOG_ERR("Could not register to interrupt %d\n",
 			    new_drvdata->irq);
+<<<<<<< 8ce0e11cee844aec84164edad95a33f1b6dd131f
 		goto init_cc_res_err;
 >>>>>>> staging: ccree: Use platform_get_irq and devm_request_irq
 	}
@@ -323,6 +337,20 @@ static int init_cc_resources(struct platform_device *plat_dev)
 			&dma_mask);
 		return rc;
 	}
+=======
+		goto post_drvdata_err;
+	}
+	SSI_LOG_DEBUG("Registered to IRQ: %d\n", new_drvdata->irq);
+
+	init_completion(&new_drvdata->icache_setup_completion);
+
+	rc = cc_clk_on(new_drvdata);
+	if (rc)
+		goto post_drvdata_err;
+
+	if (!new_drvdata->plat_dev->dev.dma_mask)
+		new_drvdata->plat_dev->dev.dma_mask = &new_drvdata->plat_dev->dev.coherent_dma_mask;
+>>>>>>> staging: ccree: simplify resource release on error
 
 	rc = cc_clk_on(new_drvdata);
 	if (rc) {
@@ -347,20 +375,32 @@ static int init_cc_resources(struct platform_device *plat_dev)
 		 DRV_MODULE_VERSION);
 
 	rc = init_cc_regs(new_drvdata, true);
+<<<<<<< 8ce0e11cee844aec84164edad95a33f1b6dd131f
 	if (unlikely(rc)) {
 		dev_err(dev, "init_cc_regs failed\n");
+=======
+	if (unlikely(rc != 0)) {
+		SSI_LOG_ERR("init_cc_regs failed\n");
+>>>>>>> staging: ccree: simplify resource release on error
 		goto post_clk_err;
 	}
 
 #ifdef ENABLE_CC_SYSFS
+<<<<<<< 8ce0e11cee844aec84164edad95a33f1b6dd131f
 	rc = ssi_sysfs_init(&dev->kobj, new_drvdata);
 	if (unlikely(rc)) {
 		dev_err(dev, "init_stat_db failed\n");
+=======
+	rc = ssi_sysfs_init(&plat_dev->dev.kobj, new_drvdata);
+	if (unlikely(rc != 0)) {
+		SSI_LOG_ERR("init_stat_db failed\n");
+>>>>>>> staging: ccree: simplify resource release on error
 		goto post_regs_err;
 	}
 #endif
 
 	rc = ssi_fips_init(new_drvdata);
+<<<<<<< 8ce0e11cee844aec84164edad95a33f1b6dd131f
 	if (unlikely(rc)) {
 		dev_err(dev, "SSI_FIPS_INIT failed 0x%x\n", rc);
 		goto post_sysfs_err;
@@ -368,6 +408,15 @@ static int init_cc_resources(struct platform_device *plat_dev)
 	rc = ssi_sram_mgr_init(new_drvdata);
 	if (unlikely(rc)) {
 		dev_err(dev, "ssi_sram_mgr_init failed\n");
+=======
+	if (unlikely(rc != 0)) {
+		SSI_LOG_ERR("SSI_FIPS_INIT failed 0x%x\n", rc);
+		goto post_sysfs_err;
+	}
+	rc = ssi_sram_mgr_init(new_drvdata);
+	if (unlikely(rc != 0)) {
+		SSI_LOG_ERR("ssi_sram_mgr_init failed\n");
+>>>>>>> staging: ccree: simplify resource release on error
 		goto post_fips_init_err;
 	}
 
@@ -380,6 +429,7 @@ static int init_cc_resources(struct platform_device *plat_dev)
 	}
 
 	rc = request_mgr_init(new_drvdata);
+<<<<<<< 8ce0e11cee844aec84164edad95a33f1b6dd131f
 	if (unlikely(rc)) {
 		dev_err(dev, "request_mgr_init failed\n");
 		goto post_sram_mgr_err;
@@ -394,32 +444,68 @@ static int init_cc_resources(struct platform_device *plat_dev)
 	rc = cc_pm_init(new_drvdata);
 	if (unlikely(rc)) {
 		dev_err(dev, "ssi_power_mgr_init failed\n");
+=======
+	if (unlikely(rc != 0)) {
+		SSI_LOG_ERR("request_mgr_init failed\n");
+		goto post_sram_mgr_err;
+	}
+
+	rc = ssi_buffer_mgr_init(new_drvdata);
+	if (unlikely(rc != 0)) {
+		SSI_LOG_ERR("buffer_mgr_init failed\n");
+		goto post_req_mgr_err;
+	}
+
+	rc = ssi_power_mgr_init(new_drvdata);
+	if (unlikely(rc != 0)) {
+		SSI_LOG_ERR("ssi_power_mgr_init failed\n");
+>>>>>>> staging: ccree: simplify resource release on error
 		goto post_buf_mgr_err;
 	}
 
 	rc = ssi_ivgen_init(new_drvdata);
+<<<<<<< 8ce0e11cee844aec84164edad95a33f1b6dd131f
 	if (unlikely(rc)) {
 		dev_err(dev, "ssi_ivgen_init failed\n");
+=======
+	if (unlikely(rc != 0)) {
+		SSI_LOG_ERR("ssi_ivgen_init failed\n");
+>>>>>>> staging: ccree: simplify resource release on error
 		goto post_power_mgr_err;
 	}
 
 	/* Allocate crypto algs */
 	rc = ssi_ablkcipher_alloc(new_drvdata);
+<<<<<<< 8ce0e11cee844aec84164edad95a33f1b6dd131f
 	if (unlikely(rc)) {
 		dev_err(dev, "ssi_ablkcipher_alloc failed\n");
+=======
+	if (unlikely(rc != 0)) {
+		SSI_LOG_ERR("ssi_ablkcipher_alloc failed\n");
+>>>>>>> staging: ccree: simplify resource release on error
 		goto post_ivgen_err;
 	}
 
 	/* hash must be allocated before aead since hash exports APIs */
 	rc = ssi_hash_alloc(new_drvdata);
+<<<<<<< 8ce0e11cee844aec84164edad95a33f1b6dd131f
 	if (unlikely(rc)) {
 		dev_err(dev, "ssi_hash_alloc failed\n");
+=======
+	if (unlikely(rc != 0)) {
+		SSI_LOG_ERR("ssi_hash_alloc failed\n");
+>>>>>>> staging: ccree: simplify resource release on error
 		goto post_cipher_err;
 	}
 
 	rc = ssi_aead_alloc(new_drvdata);
+<<<<<<< 8ce0e11cee844aec84164edad95a33f1b6dd131f
 	if (unlikely(rc)) {
 		dev_err(dev, "ssi_aead_alloc failed\n");
+=======
+	if (unlikely(rc != 0)) {
+		SSI_LOG_ERR("ssi_aead_alloc failed\n");
+>>>>>>> staging: ccree: simplify resource release on error
 		goto post_hash_err;
 	}
 
@@ -438,9 +524,15 @@ post_cipher_err:
 post_ivgen_err:
 	ssi_ivgen_fini(new_drvdata);
 post_power_mgr_err:
+<<<<<<< 8ce0e11cee844aec84164edad95a33f1b6dd131f
 	cc_pm_fini(new_drvdata);
 post_buf_mgr_err:
 	 cc_buffer_mgr_fini(new_drvdata);
+=======
+	ssi_power_mgr_fini(new_drvdata);
+post_buf_mgr_err:
+	 ssi_buffer_mgr_fini(new_drvdata);
+>>>>>>> staging: ccree: simplify resource release on error
 post_req_mgr_err:
 	request_mgr_fini(new_drvdata);
 post_sram_mgr_err:
@@ -451,13 +543,17 @@ post_sysfs_err:
 #ifdef ENABLE_CC_SYSFS
 	ssi_sysfs_fini();
 #endif
+<<<<<<< 8ce0e11cee844aec84164edad95a33f1b6dd131f
 <<<<<<< 3a21757ff40cfa241ab079287bffc8c4d1df6ab3
 <<<<<<< 573ecde5598f24544790c209b4608f4de06c3a31
 <<<<<<< 32fe5453d4464dc2a997e90e91266ea2769f6c28
+=======
+>>>>>>> staging: ccree: simplify resource release on error
 post_regs_err:
 	fini_cc_regs(new_drvdata);
 post_clk_err:
 	cc_clk_off(new_drvdata);
+<<<<<<< 8ce0e11cee844aec84164edad95a33f1b6dd131f
 =======
 
 		if (req_mem_cc_regs) {
@@ -481,6 +577,11 @@ post_clk_err:
 		dev_set_drvdata(&plat_dev->dev, NULL);
 	}
 >>>>>>> staging: ccree: Replace kzalloc with devm_kzalloc
+=======
+post_drvdata_err:
+	SSI_LOG_ERR("ccree init error occurred!\n");
+	dev_set_drvdata(&plat_dev->dev, NULL);
+>>>>>>> staging: ccree: simplify resource release on error
 	return rc;
 }
 
