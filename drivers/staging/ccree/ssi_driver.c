@@ -170,7 +170,11 @@ int init_cc_regs(struct ssi_drvdata *drvdata, bool is_probe)
 	/* Unmask relevant interrupt cause */
 	val = (unsigned int)(~(SSI_COMP_IRQ_MASK | SSI_AXI_ERR_IRQ_MASK |
 			       SSI_GPR0_IRQ_MASK));
+<<<<<<< 096fcc02dc1223ff3a7792ca5baeb9cc4a82ba8d
 	cc_iowrite(drvdata, CC_REG(HOST_IMR), val);
+=======
+	CC_HAL_WRITE_REGISTER(CC_REG_OFFSET(HOST_RGF, HOST_IMR), val);
+>>>>>>> staging: ccree: move over to BIT macro for bit defines
 
 #ifdef DX_HOST_IRQ_TIMER_INIT_VAL_REG_OFFSET
 #ifdef DX_IRQ_DELAY

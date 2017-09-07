@@ -71,6 +71,7 @@
 #define SSI_AXI_ERR_IRQ_MASK BIT(DX_HOST_IRR_AXI_ERR_INT_BIT_SHIFT)
 
 #define SSI_COMP_IRQ_MASK BIT(DX_HOST_IRR_AXIM_COMP_INT_BIT_SHIFT)
+<<<<<<< 096fcc02dc1223ff3a7792ca5baeb9cc4a82ba8d
 
 #define AXIM_MON_COMP_VALUE GENMASK(DX_AXIM_MON_COMP_VALUE_BIT_SIZE + \
 				    DX_AXIM_MON_COMP_VALUE_BIT_SHIFT, \
@@ -78,6 +79,8 @@
 
 /* Register name mangling macro */
 #define CC_REG(reg_name) DX_ ## reg_name ## _REG_OFFSET
+=======
+>>>>>>> staging: ccree: move over to BIT macro for bit defines
 
 /* TEE FIPS status interrupt */
 #define SSI_GPR0_IRQ_MASK BIT(DX_HOST_IRR_GPR0_BIT_SHIFT)
