@@ -206,8 +206,11 @@ static int init_cc_resources(struct platform_device *plat_dev)
 <<<<<<< 32fe5453d4464dc2a997e90e91266ea2769f6c28
 =======
 	void __iomem *cc_base = NULL;
+<<<<<<< 3a21757ff40cfa241ab079287bffc8c4d1df6ab3
 	bool irq_registered = false;
 >>>>>>> staging: ccree: Replace kzalloc with devm_kzalloc
+=======
+>>>>>>> staging: ccree: Use platform_get_irq and devm_request_irq
 	struct ssi_drvdata *new_drvdata;
 	struct device *dev = &plat_dev->dev;
 	struct device_node *np = dev->of_node;
@@ -269,6 +272,7 @@ static int init_cc_resources(struct platform_device *plat_dev)
 	/* Then IRQ */
 	new_drvdata->irq = platform_get_irq(plat_dev, 0);
 	if (new_drvdata->irq < 0) {
+<<<<<<< 3a21757ff40cfa241ab079287bffc8c4d1df6ab3
 		dev_err(dev, "Failed getting IRQ resource\n");
 		return new_drvdata->irq;
 	}
@@ -279,13 +283,30 @@ static int init_cc_resources(struct platform_device *plat_dev)
 		dev_err(dev, "Could not register to interrupt %d\n",
 			new_drvdata->irq);
 		return rc;
+=======
+		SSI_LOG_ERR("Failed getting IRQ resource\n");
+		rc = new_drvdata->irq;
+		goto init_cc_res_err;
+	}
+	rc = devm_request_irq(&plat_dev->dev, new_drvdata->irq, cc_isr,
+			      IRQF_SHARED, "arm_cc7x", new_drvdata);
+	if (rc) {
+		SSI_LOG_ERR("Could not register to interrupt %d\n",
+			    new_drvdata->irq);
+		goto init_cc_res_err;
+>>>>>>> staging: ccree: Use platform_get_irq and devm_request_irq
 	}
 	dev_dbg(dev, "Registered to IRQ: %d\n", new_drvdata->irq);
 
+<<<<<<< 3a21757ff40cfa241ab079287bffc8c4d1df6ab3
 	init_completion(&new_drvdata->hw_queue_avail);
 
 	if (!plat_dev->dev.dma_mask)
 		plat_dev->dev.dma_mask = &plat_dev->dev.coherent_dma_mask;
+=======
+	SSI_LOG_DEBUG("Registered to IRQ: %d\n", new_drvdata->irq);
+	new_drvdata->plat_dev = plat_dev;
+>>>>>>> staging: ccree: Use platform_get_irq and devm_request_irq
 
 	dma_mask = (dma_addr_t)(DMA_BIT_MASK(DMA_BIT_MASK_LEN));
 	while (dma_mask > 0x7fffffffUL) {
@@ -430,6 +451,7 @@ post_sysfs_err:
 #ifdef ENABLE_CC_SYSFS
 	ssi_sysfs_fini();
 #endif
+<<<<<<< 3a21757ff40cfa241ab079287bffc8c4d1df6ab3
 <<<<<<< 573ecde5598f24544790c209b4608f4de06c3a31
 <<<<<<< 32fe5453d4464dc2a997e90e91266ea2769f6c28
 post_regs_err:
@@ -454,6 +476,8 @@ post_clk_err:
 			new_drvdata->res_irq = NULL;
 >>>>>>> staging: ccree: Convert to devm_ioremap_resource for map, unmap
 		}
+=======
+>>>>>>> staging: ccree: Use platform_get_irq and devm_request_irq
 		dev_set_drvdata(&plat_dev->dev, NULL);
 	}
 >>>>>>> staging: ccree: Replace kzalloc with devm_kzalloc
@@ -485,10 +509,13 @@ static void cleanup_cc_resources(struct platform_device *plat_dev)
 #endif
 	fini_cc_regs(drvdata);
 	cc_clk_off(drvdata);
+<<<<<<< 3a21757ff40cfa241ab079287bffc8c4d1df6ab3
 <<<<<<< 32fe5453d4464dc2a997e90e91266ea2769f6c28
 =======
 	free_irq(drvdata->res_irq->start, drvdata);
 	drvdata->res_irq = NULL;
+=======
+>>>>>>> staging: ccree: Use platform_get_irq and devm_request_irq
 	dev_set_drvdata(&plat_dev->dev, NULL);
 >>>>>>> staging: ccree: Replace kzalloc with devm_kzalloc
 }
