@@ -386,7 +386,11 @@ int send_request(
 		 * with resuming power. Set the free slot count to 0 and hope
 		 * for the best.
 		 */
+<<<<<<< 8efb4d1fb63fe7422bfc20c500c0f142e854d330
 		dev_err(dev, "HW free slot count mismatch.");
+=======
+		SSI_LOG_ERR("HW free slot count mismatch.");
+>>>>>>> staging: ccree: remove BUG macro usage
 		req_mgr_h->q_free_slots = 0;
 	} else {
 		/* Update the free slots in HW queue */
@@ -489,13 +493,22 @@ static void proc_completions(struct ssi_drvdata *drvdata)
 		request_mgr_handle->axi_completed--;
 
 		/* Dequeue request */
+<<<<<<< 8efb4d1fb63fe7422bfc20c500c0f142e854d330
 		if (unlikely(*head == *tail)) {
+=======
+		if (unlikely(request_mgr_handle->req_queue_head == request_mgr_handle->req_queue_tail)) {
+>>>>>>> staging: ccree: remove BUG macro usage
 			/* We are supposed to handle a completion but our
 			 * queue is empty. This is not normal. Return and
 			 * hope for the best.
 			 */
+<<<<<<< 8efb4d1fb63fe7422bfc20c500c0f142e854d330
 			dev_err(dev, "Request queue is empty head == tail %u\n",
 				*head);
+=======
+			SSI_LOG_ERR("Request queue is empty head == tail %u\n",
+				    request_mgr_handle->req_queue_head);
+>>>>>>> staging: ccree: remove BUG macro usage
 			break;
 		}
 

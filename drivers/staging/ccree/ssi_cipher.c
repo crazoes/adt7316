@@ -557,7 +557,11 @@ ssi_blkcipher_create_setup_desc(
 		(*seq_size)++;
 		break;
 	default:
+<<<<<<< 8efb4d1fb63fe7422bfc20c500c0f142e854d330
 		dev_err(dev, "Unsupported cipher mode (%d)\n", cipher_mode);
+=======
+		SSI_LOG_ERR("Unsupported cipher mode (%d)\n", cipher_mode);
+>>>>>>> staging: ccree: remove BUG macro usage
 	}
 }
 

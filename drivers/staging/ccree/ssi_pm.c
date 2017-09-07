@@ -108,7 +108,11 @@ int cc_pm_put_suspend(struct device *dev)
 		rc = pm_runtime_put_autosuspend(dev);
 	} else {
 		/* Something wrong happens*/
+<<<<<<< 8efb4d1fb63fe7422bfc20c500c0f142e854d330
 		dev_err(dev, "request to suspend already suspended queue");
+=======
+		SSI_LOG_ERR("request to suspend already suspended queue");
+>>>>>>> staging: ccree: remove BUG macro usage
 		rc = -EBUSY;
 	}
 	return rc;

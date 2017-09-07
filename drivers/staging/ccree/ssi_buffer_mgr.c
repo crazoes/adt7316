@@ -107,8 +107,13 @@ static unsigned int cc_get_sgl_nents(
 {
 	unsigned int nents = 0;
 
+<<<<<<< 8efb4d1fb63fe7422bfc20c500c0f142e854d330
 	while (nbytes) {
 		if (sg_list->length) {
+=======
+	while (nbytes != 0) {
+		if (sg_list->length != 0) {
+>>>>>>> staging: ccree: remove BUG macro usage
 			nents++;
 			/* get the number of bytes in the last entry */
 			*lbytes = nbytes;
@@ -855,7 +860,11 @@ static inline int cc_aead_chain_assoc(
 			 * unexpected
 			 */
 			if (!current_sg) {
+<<<<<<< 8efb4d1fb63fe7422bfc20c500c0f142e854d330
 				dev_err(dev, "reached end of sg list. unexpected\n");
+=======
+				SSI_LOG_ERR("reached end of sg list. unexpected\n");
+>>>>>>> staging: ccree: remove BUG macro usage
 				return -EINVAL;
 			}
 			sg_index += current_sg->length;
@@ -1122,7 +1131,11 @@ static inline int cc_aead_chain_data(
 		areq_ctx->src_sgl = sg_next(areq_ctx->src_sgl);
 		//if have reached the end of the sgl, then this is unexpected
 		if (!areq_ctx->src_sgl) {
+<<<<<<< 8efb4d1fb63fe7422bfc20c500c0f142e854d330
 			dev_err(dev, "reached end of sg list. unexpected\n");
+=======
+			SSI_LOG_ERR("reached end of sg list. unexpected\n");
+>>>>>>> staging: ccree: remove BUG macro usage
 			return -EINVAL;
 		}
 		sg_index += areq_ctx->src_sgl->length;
@@ -1166,7 +1179,11 @@ static inline int cc_aead_chain_data(
 		areq_ctx->dst_sgl = sg_next(areq_ctx->dst_sgl);
 		//if have reached the end of the sgl, then this is unexpected
 		if (!areq_ctx->dst_sgl) {
+<<<<<<< 8efb4d1fb63fe7422bfc20c500c0f142e854d330
 			dev_err(dev, "reached end of sg list. unexpected\n");
+=======
+			SSI_LOG_ERR("reached end of sg list. unexpected\n");
+>>>>>>> staging: ccree: remove BUG macro usage
 			return -EINVAL;
 		}
 		sg_index += areq_ctx->dst_sgl->length;
