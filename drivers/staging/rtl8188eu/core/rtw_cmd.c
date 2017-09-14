@@ -145,7 +145,7 @@ void rtw_free_cmd_obj(struct cmd_obj *pcmd)
 
 int rtw_cmd_thread(void *context)
 {
-	u8 ret;
+	u8 ret, *rsp_buf;
 	struct cmd_obj *pcmd;
 	u8 (*cmd_hdl)(struct adapter *padapter, u8 *pbuf);
 	void (*pcmd_callback)(struct adapter *dev, struct cmd_obj *pcmd);
@@ -206,7 +206,9 @@ _next:
 				RT_TRACE(_module_rtl871x_cmd_c_, _drv_info_, ("mlme_cmd_hdl(): pcmd_callback = 0x%p, cmdcode = 0x%x\n", pcmd_callback, pcmd->cmdcode));
 				rtw_free_cmd_obj(pcmd);
 			} else {
-				/* todo: !!! fill rsp_buf to pcmd->rsp if (pcmd->rsp!= NULL) */
+				if (!pcmd->rsp)
+					rsp_buf = pcmd->rsp;
+
 				pcmd_callback(pcmd->padapter, pcmd);/* need conider that free cmd_obj in rtw_cmd_callback */
 			}
 		} else {
