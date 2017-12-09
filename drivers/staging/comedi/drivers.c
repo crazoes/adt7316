@@ -928,18 +928,7 @@ int comedi_device_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		}
 		module_put(driv->module);
 	}
-	if (!driv) {
-		/*  recognize has failed if we get here */
-		/*  report valid board names before returning error */
-		for (driv = comedi_drivers; driv; driv = driv->next) {
-			if (!try_module_get(driv->module))
-				continue;
-			comedi_report_boards(driv);
-			module_put(driv->module);
-		}
-		ret = -EIO;
-		goto out;
-	}
+
 	if (!driv->attach) {
 		/* driver does not support manual configuration */
 		dev_warn(dev->class_dev,
