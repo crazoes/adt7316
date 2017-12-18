@@ -659,13 +659,9 @@ irda_irnet_destroy(irnet_socket *	self)
       self->iriap = NULL;
     }
 
-  /* Cleanup eventual discoveries from connection attempt or control channel */
-  if(self->discoveries != NULL)
-    {
-      /* Cleanup our copy of the discovery log */
-      kfree(self->discoveries);
-      self->discoveries = NULL;
-    }
+  /* Cleanup our copy of the discovery log */
+  kfree(self->discoveries);
+  self->discoveries = NULL;
 
   /* Close our IrTTP connection */
   if(self->tsap)
@@ -874,11 +870,9 @@ irnet_connect_socket(irnet_socket *	server,
       iriap_close(new->iriap);
       new->iriap = NULL;
     }
-  if(new->discoveries != NULL)
-    {
-      kfree(new->discoveries);
-      new->discoveries = NULL;
-    }
+
+  kfree(new->discoveries);
+  new->discoveries = NULL;
 
 #ifdef CONNECT_INDIC_KICK
   /* As currently we don't block packets in ppp_irnet_send() while passive,
@@ -1605,12 +1599,10 @@ irnet_discovervalue_confirm(int		result,
   /* No more items : remove the log and signal termination */
   DEBUG(IRDA_OCB_INFO, "Cleaning up log (0x%p)\n",
 	self->discoveries);
-  if(self->discoveries != NULL)
-    {
-      /* Cleanup our copy of the discovery log */
-      kfree(self->discoveries);
-      self->discoveries = NULL;
-    }
+
+  /* Cleanup our copy of the discovery log */
+  kfree(self->discoveries);
+  self->discoveries = NULL;
   self->disco_number = -1;
 
   /* Check out what we found */

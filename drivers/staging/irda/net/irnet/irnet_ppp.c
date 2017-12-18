@@ -259,12 +259,10 @@ irnet_read_discovery_log(irnet_socket *ap, char *event, int buf_size)
       /* No more items : remove the log and signal termination */
       DEBUG(CTRL_INFO, "Cleaning up log (0x%p)\n",
 	    ap->discoveries);
-      if(ap->discoveries != NULL)
-	{
-	  /* Cleanup our copy of the discovery log */
-	  kfree(ap->discoveries);
-	  ap->discoveries = NULL;
-	}
+
+      /* Cleanup our copy of the discovery log */
+      kfree(ap->discoveries);
+      ap->discoveries = NULL;
       ap->disco_number = -1;
     }
 
