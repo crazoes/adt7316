@@ -1061,6 +1061,7 @@ out_of_mem:
 	kfree(pages);
 	kfree(bo->page_obj);
 
+	mutex_unlock(&bo->mutex);
 	return -ENOMEM;
 }
 
