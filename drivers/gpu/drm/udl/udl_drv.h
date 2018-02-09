@@ -39,6 +39,7 @@ struct urb_node {
 
 struct urb_list {
 	struct list_head list;
+	struct mutex plock;
 	spinlock_t lock;
 	struct semaphore limit_sem;
 	int available;
