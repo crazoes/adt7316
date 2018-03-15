@@ -68,21 +68,21 @@
 #define  ADIS16209_MSC_CTRL_ACTIVE_HIGH		BIT(1)
 #define  ADIS16209_MSC_CTRL_DATA_RDY_DIO2	BIT(0)
 
-#define ADIS16209_DIAG_STAT_REG			0x3C
-#define  ADIS16209_DIAG_STAT_ALARM2		BIT(9)
-#define  ADIS16209_DIAG_STAT_ALARM1		BIT(8)
-#define ADIS16209_DIAG_STAT_SELFTEST_FAIL_BIT	5
-#define ADIS16209_DIAG_STAT_SPI_FAIL_BIT	3
-#define ADIS16209_DIAG_STAT_FLASH_UPT_BIT	2
+#define ADIS16209_STAT_REG			0x3C
+#define  ADIS16209_STAT_ALARM2			BIT(9)
+#define  ADIS16209_STAT_ALARM1			BIT(8)
+#define ADIS16209_STAT_SELFTEST_FAIL_BIT	5
+#define ADIS16209_STAT_SPI_FAIL_BIT		3
+#define ADIS16209_STAT_FLASH_UPT_FAIL_BIT	2
 /* Power supply above 3.625 V */
-#define ADIS16209_DIAG_STAT_POWER_HIGH_BIT	1
+#define ADIS16209_STAT_POWER_HIGH_BIT		1
 /* Power supply below 3.15 V */
-#define ADIS16209_DIAG_STAT_POWER_LOW_BIT	0
+#define ADIS16209_STAT_POWER_LOW_BIT		0
 
-#define ADIS16209_GLOB_CMD_REG			0x3E
-#define  ADIS16209_GLOB_CMD_SW_RESET		BIT(7)
-#define  ADIS16209_GLOB_CMD_CLEAR_STAT		BIT(4)
-#define  ADIS16209_GLOB_CMD_FACTORY_CAL		BIT(1)
+#define ADIS16209_CMD_REG			0x3E
+#define  ADIS16209_CMD_SW_RESET			BIT(7)
+#define  ADIS16209_CMD_CLEAR_STAT		BIT(4)
+#define  ADIS16209_CMD_FACTORY_CAL		BIT(1)
 
 #define ADIS16209_ERROR_ACTIVE			BIT(14)
 
@@ -155,10 +155,16 @@ static int adis16209_read_raw(struct iio_dev *indio_dev,
 		switch (chan->type) {
 		case IIO_VOLTAGE:
 			*val = 0;
-			if (chan->channel == 0)
+			switch (chan->channel) {
+			case 0:
 				*val2 = 305180; /* 0.30518 mV */
-			else
+				break;
+			case 1:
 				*val2 = 610500; /* 0.6105 mV */
+				break;
+			default:
+				return -EINVAL;
+			}
 			return IIO_VAL_INT_PLUS_MICRO;
 		case IIO_TEMP:
 			*val = -470;
@@ -206,9 +212,8 @@ static int adis16209_read_raw(struct iio_dev *indio_dev,
 		ret = adis_read_reg_16(st, addr, &val16);
 		if (ret)
 			return ret;
-		val16 &= (1 << bits) - 1;
-		val16 = (s16)(val16 << (16 - bits)) >> (16 - bits);
-		*val = val16;
+
+		*val = sign_extend32(val16, bits - 1);
 		return IIO_VAL_INT;
 	}
 	return -EINVAL;
@@ -238,29 +243,29 @@ static const struct iio_info adis16209_info = {
 };
 
 static const char * const adis16209_status_error_msgs[] = {
-	[ADIS16209_DIAG_STAT_SELFTEST_FAIL_BIT] = "Self test failure",
-	[ADIS16209_DIAG_STAT_SPI_FAIL_BIT] = "SPI failure",
-	[ADIS16209_DIAG_STAT_FLASH_UPT_BIT] = "Flash update failed",
-	[ADIS16209_DIAG_STAT_POWER_HIGH_BIT] = "Power supply above 3.625V",
-	[ADIS16209_DIAG_STAT_POWER_LOW_BIT] = "Power supply below 3.15V",
+	[ADIS16209_STAT_SELFTEST_FAIL_BIT] = "Self test failure",
+	[ADIS16209_STAT_SPI_FAIL_BIT] = "SPI failure",
+	[ADIS16209_STAT_FLASH_UPT_FAIL_BIT] = "Flash update failed",
+	[ADIS16209_STAT_POWER_HIGH_BIT] = "Power supply above 3.625V",
+	[ADIS16209_STAT_POWER_LOW_BIT] = "Power supply below 3.15V",
 };
 
 static const struct adis_data adis16209_data = {
 	.read_delay = 30,
 	.msc_ctrl_reg = ADIS16209_MSC_CTRL_REG,
-	.glob_cmd_reg = ADIS16209_GLOB_CMD_REG,
-	.diag_stat_reg = ADIS16209_DIAG_STAT_REG,
+	.glob_cmd_reg = ADIS16209_CMD_REG,
+	.diag_stat_reg = ADIS16209_STAT_REG,
 
 	.self_test_mask = ADIS16209_MSC_CTRL_SELF_TEST_EN,
 	.self_test_no_autoclear = true,
 	.startup_delay = ADIS16209_STARTUP_DELAY_MS,
 
 	.status_error_msgs = adis16209_status_error_msgs,
-	.status_error_mask = BIT(ADIS16209_DIAG_STAT_SELFTEST_FAIL_BIT) |
-		BIT(ADIS16209_DIAG_STAT_SPI_FAIL_BIT) |
-		BIT(ADIS16209_DIAG_STAT_FLASH_UPT_BIT) |
-		BIT(ADIS16209_DIAG_STAT_POWER_HIGH_BIT) |
-		BIT(ADIS16209_DIAG_STAT_POWER_LOW_BIT),
+	.status_error_mask = BIT(ADIS16209_STAT_SELFTEST_FAIL_BIT) |
+		BIT(ADIS16209_STAT_SPI_FAIL_BIT) |
+		BIT(ADIS16209_STAT_FLASH_UPT_FAIL_BIT) |
+		BIT(ADIS16209_STAT_POWER_HIGH_BIT) |
+		BIT(ADIS16209_STAT_POWER_LOW_BIT),
 };
 
 static int adis16209_probe(struct spi_device *spi)
