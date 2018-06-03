@@ -25,6 +25,7 @@ int hfs_find_init(struct hfs_btree *tree, struct hfs_find_data *fd)
 	fd->key = ptr + tree->max_key_len + 2;
 	hfs_dbg(BNODE_REFS, "find_init: %d (%p)\n",
 		tree->cnid, __builtin_return_address(0));
+	mutex_unlock(&tree->tree_lock);
 	mutex_lock(&tree->tree_lock);
 	return 0;
 }
