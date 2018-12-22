@@ -12,105 +12,28 @@
 #include <linux/i2c.h>
 #include <linux/interrupt.h>
 #include <linux/module.h>
+#include <linux/regmap.h>
 
 #include "adt7316.h"
 
 /*
- * adt7316 register access by I2C
- */
-static int adt7316_i2c_read(void *client, u8 reg, u8 *data)
-{
-	struct i2c_client *cl = client;
-	int ret;
-
-	ret = i2c_smbus_write_byte(cl, reg);
-	if (ret < 0) {
-		dev_err(&cl->dev, "I2C fail to select reg\n");
-		return ret;
-	}
-
-	ret = i2c_smbus_read_byte(client);
-
-	if (!ret)
-		return -EIO;
-
-	if (ret < 0) {
-		dev_err(&cl->dev, "I2C read error\n");
-		return ret;
-	}
-
-	*data = ret;
-
-	return 0;
-}
-
-static int adt7316_i2c_write(void *client, u8 reg, u8 data)
-{
-	struct i2c_client *cl = client;
-	int ret = 0;
-
-	ret = i2c_smbus_write_byte_data(cl, reg, data);
-	if (ret < 0)
-		dev_err(&cl->dev, "I2C write error\n");
-
-	return ret;
-}
-
-static int adt7316_i2c_multi_read(void *client, u8 reg, u8 count, u8 *data)
-{
-	struct i2c_client *cl = client;
-	int i, ret = 0;
-
-	if (count > ADT7316_REG_MAX_ADDR)
-		count = ADT7316_REG_MAX_ADDR;
-
-	for (i = 0; i < count; i++) {
-		ret = adt7316_i2c_read(cl, reg, &data[i]);
-		if (ret < 0) {
-			dev_err(&cl->dev, "I2C multi read error\n");
-			return ret;
-		}
-	}
-
-	return 0;
-}
-
-static int adt7316_i2c_multi_write(void *client, u8 reg, u8 count, u8 *data)
-{
-	struct i2c_client *cl = client;
-	int i, ret = 0;
-
-	if (count > ADT7316_REG_MAX_ADDR)
-		count = ADT7316_REG_MAX_ADDR;
-
-	for (i = 0; i < count; i++) {
-		ret = adt7316_i2c_write(cl, reg, data[i]);
-		if (ret < 0) {
-			dev_err(&cl->dev, "I2C multi write error\n");
-			return ret;
-		}
-	}
-
-	return 0;
-}
-
-/*
  * device probe and remove
  */
-
 static int adt7316_i2c_probe(struct i2c_client *client,
 			     const struct i2c_device_id *id)
 {
-	struct adt7316_bus bus = {
-		.client = client,
-		.irq = client->irq,
-		.read = adt7316_i2c_read,
-		.write = adt7316_i2c_write,
-		.multi_read = adt7316_i2c_multi_read,
-		.multi_write = adt7316_i2c_multi_write,
-	};
+	struct regmap *regmap;
 
-	return adt7316_probe(&client->dev, &bus, id->name);
+	regmap = devm_regmap_init_i2c(client, &adt7316_regmap_config);
+
+	if (IS_ERR(regmap)) {
+		dev_err(&client->dev, "Error initializing i2c regmap: %ld\n",
+			PTR_ERR(regmap));
+		return PTR_ERR(regmap);
+	}
+
+	return adt7316_probe(&client->dev, regmap, id ? id->name : NULL,
+			     client->irq);
 }
 
 static const struct i2c_device_id adt7316_i2c_id[] = {
