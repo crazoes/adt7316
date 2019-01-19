@@ -12,60 +12,28 @@
 #include <linux/i2c.h>
 #include <linux/interrupt.h>
 #include <linux/module.h>
+#include <linux/regmap.h>
 
 #include "adt7316.h"
 
 /*
- * adt7316 register access by I2C
- */
-static int adt7316_i2c_read(void *client, u8 reg, u8 *data)
-{
-	struct i2c_client *cl = client;
-	int ret;
-
-	ret = i2c_smbus_write_byte(cl, reg);
-	if (ret < 0) {
-		dev_err(&cl->dev, "I2C fail to select reg\n");
-		return ret;
-	}
-
-	ret = i2c_smbus_read_byte(client);
-	if (ret < 0) {
-		dev_err(&cl->dev, "I2C read error\n");
-		return ret;
-	}
-
-	*data = ret;
-
-	return 0;
-}
-
-static int adt7316_i2c_write(void *client, u8 reg, u8 data)
-{
-	struct i2c_client *cl = client;
-	int ret;
-
-	ret = i2c_smbus_write_byte_data(cl, reg, data);
-	if (ret < 0)
-		dev_err(&cl->dev, "I2C write error\n");
-
-	return ret;
-}
-
-/*
  * device probe and remove
  */
-
 static int adt7316_i2c_probe(struct i2c_client *client,
 			     const struct i2c_device_id *id)
 {
-	struct adt7316_bus bus = {
-		.client = client,
-		.read = adt7316_i2c_read,
-		.write = adt7316_i2c_write,
-	};
+	struct regmap *regmap;
 
-	return adt7316_probe(&client->dev, &bus, id->name, client->irq);
+	regmap = devm_regmap_init_i2c(client, &adt7316_regmap_config);
+
+	if (IS_ERR(regmap)) {
+		dev_err(&client->dev, "Error initializing i2c regmap: %ld\n",
+			PTR_ERR(regmap));
+		return PTR_ERR(regmap);
+	}
+
+	return adt7316_probe(&client->dev, regmap, id ? id->name : NULL,
+			     client->irq);
 }
 
 static const struct i2c_device_id adt7316_i2c_id[] = {
