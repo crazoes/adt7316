@@ -1799,12 +1799,12 @@ static irqreturn_t adt7316_event_handler(int irq, void *private)
 	return IRQ_HANDLED;
 }
 
-static int adt7316_setup_irq(struct iio_dev *indio_dev)
+static int adt7316_setup_irq(struct iio_dev *indio_dev, int irq)
 {
 	struct adt7316_chip_info *chip = iio_priv(indio_dev);
 	int irq_type, ret;
 
-	irq_type = irqd_get_trigger_type(irq_get_irq_data(chip->bus.irq));
+	irq_type = irqd_get_trigger_type(irq_get_irq_data(irq));
 
 	switch (irq_type) {
 	case IRQF_TRIGGER_HIGH:
@@ -1820,13 +1820,12 @@ static int adt7316_setup_irq(struct iio_dev *indio_dev)
 		break;
 	}
 
-	ret = devm_request_threaded_irq(&indio_dev->dev, chip->bus.irq,
+	ret = devm_request_threaded_irq(&indio_dev->dev, irq,
 					NULL, adt7316_event_handler,
 					irq_type | IRQF_ONESHOT,
 					indio_dev->name, indio_dev);
 	if (ret) {
-		dev_err(&indio_dev->dev, "failed to request irq %d\n",
-			chip->bus.irq);
+		dev_err(&indio_dev->dev, "failed to request irq %d\n", irq);
 		return ret;
 	}
 
@@ -2126,7 +2125,7 @@ static const struct iio_info adt7516_info = {
  * device probe and remove
  */
 int adt7316_probe(struct device *dev, struct adt7316_bus *bus,
-		  const char *name)
+		  const char *name, int irq)
 {
 	struct adt7316_chip_info *chip;
 	struct iio_dev *indio_dev;
@@ -2179,8 +2178,8 @@ int adt7316_probe(struct device *dev, struct adt7316_bus *bus,
 	indio_dev->name = name;
 	indio_dev->modes = INDIO_DIRECT_MODE;
 
-	if (chip->bus.irq > 0) {
-		ret = adt7316_setup_irq(indio_dev);
+	if (irq > 0) {
+		ret = adt7316_setup_irq(indio_dev, irq);
 		if (ret)
 			return ret;
 	}

@@ -93,7 +93,6 @@ static int adt7316_spi_probe(struct spi_device *spi_dev)
 {
 	struct adt7316_bus bus = {
 		.client = spi_dev,
-		.irq = spi_dev->irq,
 		.read = adt7316_spi_read,
 		.write = adt7316_spi_write,
 		.multi_read = adt7316_spi_multi_read,
@@ -112,7 +111,8 @@ static int adt7316_spi_probe(struct spi_device *spi_dev)
 	adt7316_spi_write(spi_dev, 0, 0);
 	adt7316_spi_write(spi_dev, 0, 0);
 
-	return adt7316_probe(&spi_dev->dev, &bus, spi_dev->modalias);
+	return adt7316_probe(&spi_dev->dev, &bus, spi_dev->modalias,
+			     spi_dev->irq);
 }
 
 static const struct spi_device_id adt7316_spi_id[] = {
