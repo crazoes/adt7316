@@ -11,74 +11,19 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/interrupt.h>
+#include <linux/regmap.h>
 #include <linux/spi/spi.h>
 
 #include "adt7316.h"
 
 #define ADT7316_SPI_MAX_FREQ_HZ		5000000
-#define ADT7316_SPI_CMD_READ		0x91
-#define ADT7316_SPI_CMD_WRITE		0x90
-
-/*
- * adt7316 register access by SPI
- */
-
-static int adt7316_spi_read(void *client, u8 reg, u8 *data)
-{
-	struct spi_device *spi_dev = client;
-	u8 cmd[2];
-	int ret;
-
-	cmd[0] = ADT7316_SPI_CMD_WRITE;
-	cmd[1] = reg;
-
-	ret = spi_write(spi_dev, cmd, 2);
-	if (ret < 0) {
-		dev_err(&spi_dev->dev, "SPI fail to select reg\n");
-		return ret;
-	}
-
-	cmd[0] = ADT7316_SPI_CMD_READ;
-
-	ret = spi_write_then_read(spi_dev, cmd, 1, data, 1);
-	if (ret < 0) {
-		dev_err(&spi_dev->dev, "SPI read data error\n");
-		return ret;
-	}
-
-	return 0;
-}
-
-static int adt7316_spi_write(void *client, u8 reg, u8 val)
-{
-	struct spi_device *spi_dev = client;
-	u8 buf[ADT7316_REG_MAX_ADDR + 2];
-	int ret = 0;
-
-	buf[0] = ADT7316_SPI_CMD_WRITE;
-	buf[1] = reg;
-	buf[2] = val;
-
-	ret = spi_write(spi_dev, buf, 3);
-	if (ret < 0) {
-		dev_err(&spi_dev->dev, "SPI write error\n");
-		return ret;
-	}
-
-	return ret;
-}
 
 /*
  * device probe and remove
  */
-
 static int adt7316_spi_probe(struct spi_device *spi_dev)
 {
-	struct adt7316_bus bus = {
-		.client = spi_dev,
-		.read = adt7316_spi_read,
-		.write = adt7316_spi_write,
-	};
+	struct regmap *regmap;
 
 	/* don't exceed max specified SPI CLK frequency */
 	if (spi_dev->max_speed_hz > ADT7316_SPI_MAX_FREQ_HZ) {
@@ -87,12 +32,19 @@ static int adt7316_spi_probe(struct spi_device *spi_dev)
 		return -EINVAL;
 	}
 
-	/* switch from default I2C protocol to SPI protocol */
-	adt7316_spi_write(spi_dev, 0, 0);
-	adt7316_spi_write(spi_dev, 0, 0);
-	adt7316_spi_write(spi_dev, 0, 0);
+	regmap = devm_regmap_init_spi(spi_dev, &adt7316_regmap_config);
+	if (IS_ERR(regmap)) {
+		dev_err(&spi_dev->dev, "Error initializing spi regmap: %ld\n",
+			PTR_ERR(regmap));
+		return PTR_ERR(regmap);
+	}
 
-	return adt7316_probe(&spi_dev->dev, &bus, spi_dev->modalias,
+	/* switch from default I2C protocol to SPI protocol */
+	regmap_write(regmap, 0, 0);
+	regmap_write(regmap, 0, 0);
+	regmap_write(regmap, 0, 0);
+
+	return adt7316_probe(&spi_dev->dev, regmap, spi_dev->modalias,
 			     spi_dev->irq);
 }
 
