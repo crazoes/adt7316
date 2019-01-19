@@ -23,14 +23,11 @@
  * adt7316 register access by SPI
  */
 
-static int adt7316_spi_multi_read(void *client, u8 reg, u8 count, u8 *data)
+static int adt7316_spi_read(void *client, u8 reg, u8 *data)
 {
 	struct spi_device *spi_dev = client;
 	u8 cmd[2];
 	int ret;
-
-	if (count > ADT7316_REG_MAX_ADDR)
-		count = ADT7316_REG_MAX_ADDR;
 
 	cmd[0] = ADT7316_SPI_CMD_WRITE;
 	cmd[1] = reg;
@@ -43,7 +40,7 @@ static int adt7316_spi_multi_read(void *client, u8 reg, u8 count, u8 *data)
 
 	cmd[0] = ADT7316_SPI_CMD_READ;
 
-	ret = spi_write_then_read(spi_dev, cmd, 1, data, count);
+	ret = spi_write_then_read(spi_dev, cmd, 1, data, 1);
 	if (ret < 0) {
 		dev_err(&spi_dev->dev, "SPI read data error\n");
 		return ret;
@@ -52,37 +49,23 @@ static int adt7316_spi_multi_read(void *client, u8 reg, u8 count, u8 *data)
 	return 0;
 }
 
-static int adt7316_spi_multi_write(void *client, u8 reg, u8 count, u8 *data)
+static int adt7316_spi_write(void *client, u8 reg, u8 val)
 {
 	struct spi_device *spi_dev = client;
 	u8 buf[ADT7316_REG_MAX_ADDR + 2];
-	int i, ret;
-
-	if (count > ADT7316_REG_MAX_ADDR)
-		count = ADT7316_REG_MAX_ADDR;
+	int ret = 0;
 
 	buf[0] = ADT7316_SPI_CMD_WRITE;
 	buf[1] = reg;
-	for (i = 0; i < count; i++)
-		buf[i + 2] = data[i];
+	buf[2] = val;
 
-	ret = spi_write(spi_dev, buf, count + 2);
+	ret = spi_write(spi_dev, buf, 3);
 	if (ret < 0) {
 		dev_err(&spi_dev->dev, "SPI write error\n");
 		return ret;
 	}
 
 	return ret;
-}
-
-static int adt7316_spi_read(void *client, u8 reg, u8 *data)
-{
-	return adt7316_spi_multi_read(client, reg, 1, data);
-}
-
-static int adt7316_spi_write(void *client, u8 reg, u8 val)
-{
-	return adt7316_spi_multi_write(client, reg, 1, &val);
 }
 
 /*
@@ -95,8 +78,6 @@ static int adt7316_spi_probe(struct spi_device *spi_dev)
 		.client = spi_dev,
 		.read = adt7316_spi_read,
 		.write = adt7316_spi_write,
-		.multi_read = adt7316_spi_multi_read,
-		.multi_write = adt7316_spi_multi_write,
 	};
 
 	/* don't exceed max specified SPI CLK frequency */

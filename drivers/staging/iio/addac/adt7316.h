@@ -18,8 +18,6 @@ struct adt7316_bus {
 	void *client;
 	int (*read)(void *client, u8 reg, u8 *data);
 	int (*write)(void *client, u8 reg, u8 val);
-	int (*multi_read)(void *client, u8 first_reg, u8 count, u8 *data);
-	int (*multi_write)(void *client, u8 first_reg, u8 count, u8 *data);
 };
 
 #ifdef CONFIG_PM_SLEEP
