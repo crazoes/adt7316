@@ -99,14 +99,13 @@ static int adt7316_i2c_probe(struct i2c_client *client,
 {
 	struct adt7316_bus bus = {
 		.client = client,
-		.irq = client->irq,
 		.read = adt7316_i2c_read,
 		.write = adt7316_i2c_write,
 		.multi_read = adt7316_i2c_multi_read,
 		.multi_write = adt7316_i2c_multi_write,
 	};
 
-	return adt7316_probe(&client->dev, &bus, id->name);
+	return adt7316_probe(&client->dev, &bus, id->name, client->irq);
 }
 
 static const struct i2c_device_id adt7316_i2c_id[] = {
