@@ -272,6 +272,11 @@ void *ima_policy_start(struct seq_file *m, loff_t *pos);
 void *ima_policy_next(struct seq_file *m, void *v, loff_t *pos);
 void ima_policy_stop(struct seq_file *m, void *v);
 int ima_policy_show(struct seq_file *m, void *v);
+void process_buffer_measurement_proxy(const void *buf, int size,
+				      const char *eventname,
+				      enum ima_hooks func,
+				      int pcr, const char *keyring,
+				      unsigned long flags);
 
 /* Appraise integrity measurements */
 #define IMA_APPRAISE_ENFORCE	0x01

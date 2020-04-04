@@ -404,3 +404,24 @@ const char *ima_d_path(const struct path *path, char **pathbuf, char *namebuf)
 
 	return pathname;
 }
+
+void process_buffer_measurement_proxy(const void *buf, int size,
+				      const char *eventname,
+				      enum ima_hooks func,
+				      int pcr, const char *keyring,
+				      unsigned long flags)
+{
+	int name_len = strlen(keyring);
+	char *description = kmalloc(sizeof(char) * (name_len + 12), GFP_KERNEL);
+
+	if (!description) {
+		process_buffer_measurement(buf, size, eventname,
+					   func, pcr, keyring);
+	} else {
+		sprintf(description, "%s_0x%lX", keyring, flags);
+		pr_err("Description: %s\n", description);
+		process_buffer_measurement(buf, size, description,
+					   func, pcr, keyring);
+		kfree(description);
+	}
+}

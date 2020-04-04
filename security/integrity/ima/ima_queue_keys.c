@@ -154,12 +154,14 @@ void ima_process_queued_keys(void)
 		cancel_delayed_work_sync(&ima_keys_delayed_work);
 
 	list_for_each_entry_safe(entry, tmp, &ima_keys, list) {
-		if (!timer_expired)
-			process_buffer_measurement(entry->payload,
-						   entry->payload_len,
-						   entry->keyring_name,
-						   KEY_CHECK, 0,
-						   entry->keyring_name);
+		if (!timer_expired) {
+			process_buffer_measurement_proxy(entry->payload,
+							 entry->payload_len,
+							 entry->keyring_name,
+							 KEY_CHECK, 0,
+							 entry->keyring_name,
+							 0);
+		}
 		list_del(&entry->list);
 		ima_free_key_entry(entry);
 	}
