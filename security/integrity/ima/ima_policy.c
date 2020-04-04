@@ -401,6 +401,32 @@ static bool ima_match_keyring(struct ima_rule_entry *rule,
 	return matched;
 }
 
+enum match_hooks_result {
+	DIDNT_MATCH,
+	MATCHED,
+	NOT_IMPLEMENTED,
+};
+
+static enum match_hooks_result ima_match_hooks(struct ima_rule_entry *rule,
+					       struct inode *inode,
+					       const struct cred *cred,
+					       u32 secid, enum ima_hooks func,
+					       int mask, const char *keyring)
+{
+	switch (func) {
+	case KEXEC_CMDLINE:
+	case KEY_CHECK:
+		if ((rule->flags & IMA_FUNC) && (rule->func == func)) {
+			if (func == KEY_CHECK)
+				return ima_match_keyring(rule, keyring, cred);
+			return MATCHED;
+		}
+		return DIDNT_MATCH;
+	default:
+		return NOT_IMPLEMENTED;
+	}
+}
+
 /**
  * ima_match_rules - determine whether an inode matches the policy rule.
  * @rule: a pointer to a rule
@@ -419,15 +445,19 @@ static bool ima_match_rules(struct ima_rule_entry *rule, struct inode *inode,
 			    const char *keyring)
 {
 	int i;
+	enum match_hooks_result hooks_check;
 
-	if ((func == KEXEC_CMDLINE) || (func == KEY_CHECK)) {
-		if ((rule->flags & IMA_FUNC) && (rule->func == func)) {
-			if (func == KEY_CHECK)
-				return ima_match_keyring(rule, keyring, cred);
-			return true;
-		}
+	hooks_check = ima_match_hooks(rule, inode, cred, secid,
+				      func, mask, keyring);
+	switch (hooks_check) {
+	case MATCHED:
+		return true;
+	case DIDNT_MATCH:
 		return false;
+	case NOT_IMPLEMENTED:
+		break;
 	}
+
 	if ((rule->flags & IMA_FUNC) &&
 	    (rule->func != func && func != POST_SETATTR))
 		return false;
