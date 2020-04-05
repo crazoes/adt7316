@@ -69,7 +69,6 @@ static struct ima_key_entry *ima_alloc_key_entry(struct key *keyring,
 						 const void *payload,
 						 size_t payload_len)
 {
-	int rc = 0;
 	struct ima_key_entry *entry;
 
 	entry = kzalloc(sizeof(*entry), GFP_KERNEL);
@@ -82,17 +81,11 @@ static struct ima_key_entry *ima_alloc_key_entry(struct key *keyring,
 
 	if ((entry == NULL) || (entry->payload == NULL) ||
 	    (entry->keyring_name == NULL)) {
-		rc = -ENOMEM;
-		goto out;
+		ima_free_key_entry(entry);
+		return NULL;
 	}
 
 	INIT_LIST_HEAD(&entry->list);
-
-out:
-	if (rc) {
-		ima_free_key_entry(entry);
-		entry = NULL;
-	}
 
 	return entry;
 }
