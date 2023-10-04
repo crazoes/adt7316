@@ -5,6 +5,7 @@
 
 #define pr_fmt(fmt)		KBUILD_MODNAME ": " fmt
 
+#include <linux/delay.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/libps2.h>
@@ -25,6 +26,8 @@ struct psmouse_smbus_dev {
 
 static LIST_HEAD(psmouse_smbus_list);
 static DEFINE_MUTEX(psmouse_smbus_mutex);
+
+static struct workqueue_struct *psmouse_smbus_wq;
 
 static void psmouse_smbus_check_adapter(struct i2c_adapter *adapter)
 {
@@ -75,6 +78,8 @@ static void psmouse_smbus_detach_i2c_client(struct i2c_client *client)
 				    "Marking SMBus companion %s as gone\n",
 				    dev_name(&smbdev->client->dev));
 			smbdev->dead = true;
+			device_link_remove(&smbdev->client->dev,
+					   &smbdev->psmouse->ps2dev.serio->dev);
 			serio_rescan(smbdev->psmouse->ps2dev.serio);
 		} else {
 			list_del(&smbdev->node);
@@ -114,13 +119,18 @@ static psmouse_ret_t psmouse_smbus_process_byte(struct psmouse *psmouse)
 	return PSMOUSE_FULL_PACKET;
 }
 
+static void psmouse_activate_smbus_mode(struct psmouse_smbus_dev *smbdev)
+{
+	if (smbdev->need_deactivate) {
+		psmouse_deactivate(smbdev->psmouse);
+		/* Give the device time to switch into SMBus mode */
+		msleep(30);
+	}
+}
+
 static int psmouse_smbus_reconnect(struct psmouse *psmouse)
 {
-	struct psmouse_smbus_dev *smbdev = psmouse->private;
-
-	if (smbdev->need_deactivate)
-		psmouse_deactivate(psmouse);
-
+	psmouse_activate_smbus_mode(psmouse->private);
 	return 0;
 }
 
@@ -159,7 +169,7 @@ static void psmouse_smbus_schedule_remove(struct i2c_client *client)
 		INIT_WORK(&rwork->work, psmouse_smbus_remove_i2c_device);
 		rwork->client = client;
 
-		schedule_work(&rwork->work);
+		queue_work(psmouse_smbus_wq, &rwork->work);
 	}
 }
 
@@ -174,6 +184,8 @@ static void psmouse_smbus_disconnect(struct psmouse *psmouse)
 		kfree(smbdev);
 	} else {
 		smbdev->dead = true;
+		device_link_remove(&smbdev->client->dev,
+				   &psmouse->ps2dev.serio->dev);
 		psmouse_dbg(smbdev->psmouse,
 			    "posting removal request for SMBus companion %s\n",
 			    dev_name(&smbdev->client->dev));
@@ -251,8 +263,7 @@ int psmouse_smbus_init(struct psmouse *psmouse,
 		}
 	}
 
-	if (need_deactivate)
-		psmouse_deactivate(psmouse);
+	psmouse_activate_smbus_mode(smbdev);
 
 	psmouse->private = smbdev;
 	psmouse->protocol_handler = psmouse_smbus_process_byte;
@@ -270,6 +281,12 @@ int psmouse_smbus_init(struct psmouse *psmouse,
 
 	if (smbdev->client) {
 		/* We have our companion device */
+		if (!device_link_add(&smbdev->client->dev,
+				     &psmouse->ps2dev.serio->dev,
+				     DL_FLAG_STATELESS))
+			psmouse_warn(psmouse,
+				     "failed to set up link with iSMBus companion %s\n",
+				     dev_name(&smbdev->client->dev));
 		return 0;
 	}
 
@@ -295,9 +312,14 @@ int __init psmouse_smbus_module_init(void)
 {
 	int error;
 
+	psmouse_smbus_wq = alloc_workqueue("psmouse-smbus", 0, 0);
+	if (!psmouse_smbus_wq)
+		return -ENOMEM;
+
 	error = bus_register_notifier(&i2c_bus_type, &psmouse_smbus_notifier);
 	if (error) {
 		pr_err("failed to register i2c bus notifier: %d\n", error);
+		destroy_workqueue(psmouse_smbus_wq);
 		return error;
 	}
 
@@ -307,5 +329,5 @@ int __init psmouse_smbus_module_init(void)
 void psmouse_smbus_module_exit(void)
 {
 	bus_unregister_notifier(&i2c_bus_type, &psmouse_smbus_notifier);
-	flush_scheduled_work();
+	destroy_workqueue(psmouse_smbus_wq);
 }
